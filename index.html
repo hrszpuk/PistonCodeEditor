@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Python Editor | hrszpuk.com</title>
+    <script src="https://cdn.jsdelivr.net/npm/ace-builds@1.29.0/src-min-noconflict/ace.min.js"></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js" type="text/javascript"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<ul id="editor-buttons">
+    <li><a onclick=run()>Run</a></li>
+    <li><a onclick=displayClear()>Clear</a></li>
+</ul>
+<div class="content">
+    <div id="editor">print("Hello World")</div>
+    <div class="slider"></div>
+    <div id="container">
+        <p id="container-title"># Program output</p>
+        <textarea id="output"></textarea>
+    </div>
+</div>
+<script>
+    // Setting up Ace Editor
+    var editor = ace.edit("editor");
+    editor.setTheme("ace/theme/monokai");
+    editor.session.setMode("ace/mode/python");
+    editor.setFontSize(24)
+
+    // Making a "run" shortcut
+    editor.commands.addCommand({
+        name: 'Run code',
+        bindKey: {win: 'Ctrl-Enter',  mac: 'Command-Enter', linux: 'Ctrl-Enter'},
+        exec: run,
+        readOnly: true, // false if this command should not apply in readOnly mode
+        // multiSelectAction: "forEach", optional way to control behavior with multiple cursors
+        // scrollIntoView: "cursor", control how cursor is scolled into view after the command
+    });
+
+
+    // Setting up Skulpt runtime
+    function displayResult(text) {
+        var outputContainer = document.getElementById("output");
+        outputContainer.innerHTML = outputContainer.innerHTML + text;
+    }
+
+    function displayClear() {
+        document.getElementById("output").innerHTML = "";
+    }
+
+    async function run(index) {
+        var program = editor.getValue(index);
+        console.log("Running program")
+        const rawResponse = await fetch('https://emkc.org/api/v2/piston/execute', {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                'language': 'py',
+                'version': '3.10.0',
+                'files': [{"name": "main.py", "content": program}]
+            })
+        });
+        const content = await rawResponse.json();
+
+        console.log(content);
+        displayResult(content.run.output)
+    }
+</script>
+</body>
+</html>
